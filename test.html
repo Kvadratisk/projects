@@ -22,7 +22,10 @@ var x=0; //starta allt
 var y=0;
 var doReact=0;
 var test10=0;
-alert("Kontroller:\n0:cyklande färger\n1-6: fasta färger\n7:sudd\ns:spara bild\np:miniatyr av bilden ritas ut\na:ritar/trycker kontinuerligt, rekomenderar att använda med fasta färger och inte cykel avsluta med b\nw:för att rita med sparade bilderna, cyklar\ns, för att spara, skriv siffra mellan 0-4,");
+function controls() {
+alert("Kontroller:\n0:cyklande färger\n1-6: fasta färger\n7:sudd\ns:spara bild\np:miniatyr av bilden ritas ut\na:ritar/trycker kontinuerligt, rekomenderar att använda med fasta färger och inte cykel avsluta med b\nhögerpil:för att rita med sparade bilderna, cyklar\ns, för att spara, skriv siffra mellan 0-7,\nvänsterpil byter färger\n n: den här hjälprutan");
+}
+controls();
 var color1="rgb(255, 255, 0)";
 var color2="rgb(255, 0, 0)";
 var color3="rgb(0, 51, 204)";
@@ -30,8 +33,9 @@ var color4="rgb(100, 255, 100)";
 var color5="rgb(255, 255, 255)";
 var color6="rgb(0, 0, 0)";
 var tapet;
-var image=-1;
-var amount=4;
+var image=0;
+var ignore=0;
+var amount=7;
 var savCanvas=[];
 var savColor={
 R: 0,
@@ -51,6 +55,18 @@ var mode=0;
 document.addEventListener("keydown", getKey);
 function getKey(event){ //reagerar på knapptryckningar
 var key1 = event.key;
+if (ignore==1) {
+if (key1=="ArrowRight") {
+changeCC();
+showC();
+}
+for (var te51=0; te51<amount; te51++) {
+if (key1==te51+1) {
+image=te51;
+console.log(image);
+}
+}
+} else {
 switch (key1) {
 case "0":
 test10=0;
@@ -84,6 +100,9 @@ case "p":
 var x10=prompt();
 place(x10);
 break;
+case "n":
+controls();
+break;
 case "w":
 if (doReact==0 && image <= amount) {
 doReact=1;
@@ -100,6 +119,13 @@ doReact2=0;
 break;
 case "ArrowLeft":
 changeC();
+test10=0;
+break;
+case "ArrowRight":
+changeCC();
+test10=0;
+break;
+}
 }
 }
 canvas.width = window.innerWidth;//sätter canvasens storlek
@@ -145,6 +171,12 @@ window.setTimeout("intReact()", 10);
 function react(i,o) { // reagerar på mustryck
 var h=Math.round(canvas.height/40);
 var h1=Math.round(canvas.height/20);
+for (var i3=0; i3<8; i3++) {
+if ((1+h)*(h+2)+2 <=i && (1+h)*(h+2)+2+(h1-h)>i && h+(h*i3)+1 <=o && h+(h*i3)+1+(h1-h)>o) {
+console.log(1+i3+"color");
+test10=i3+1;
+}
+}
 for (var i2=0; i2<h+1; i2++) {
 for (var i1=0; i1<h+1; i1++) {
 if (1+h+h*i2+(i2+(i2*add))<=i && 1+h+(1+h)+h*i2+(i2+(i2*add))>i && 1+h+h*i1+(i1+(i1*add))<=o && 1+h+(1+h)+h*i1+(i1+(i1*add))>o) {
@@ -167,9 +199,6 @@ case 0:
 react(mX,mY);
 break;
 case 1:
-if (image>=amount) {
-image=0;
-}
 console.log(image);
 react2(mX,mY,image);
 }
@@ -183,13 +212,14 @@ react(mX,mY);
 }
 }
 //window.onMouseMove=react2;
-function react2(i,o,l) {
+function react2(i,o,k) {
 var h=Math.round(canvas.height/40);
 var h1=Math.round(canvas.height/20);
+console.log(k);
 for (var i2=0; i2<h+1; i2++) {
 for (var i1=0; i1<h+1; i1++) {
 if (1+h+h*i2+(i2+(i2*add))<=i && 1+h+(1+h)+h*i2+(i2+(i2*add))>i && 1+h+h*i1+(i1+(i1*add))<=o && 1+h+(1+h)+h*i1+(i1+(i1*add))>o) {
-c.putImageData(savCanvas[l],1+h+h*i2+(i2+(i2*add)),1+h+h*i1+(i1+(i1*add)),0,0,1+h,1+h);
+c.putImageData(savCanvas[k],1+h+h*i2+(i2+(i2*add)),1+h+h*i1+(i1+(i1*add)),0,0,1+h,1+h);
 }
 }
 }
@@ -199,16 +229,31 @@ var count=0;
 function showC() {
 var h=Math.round(canvas.height/40);
 var h1=Math.round(canvas.height/20);
-var w=Math.round(canvas.width/40);
-var w1=Math.round(canvas.width/80);
 for (var i1=0; i1<7; i1++) {
 setC("0");
 c.fillStyle=color;
-c.fillRect(((1+h)*(h+2))+2,h+(h*i1)+1,h1-h,h1-h);
+c.fillRect(((1+h)*(h+2))+2,h+(h*i1)+1,h+1,h+1);
 }
 cm.set("0",0);
 }
+function changeCC() {
+ignore++;
+doReact=1;
+doReact2=0;
+console.log(ignore+":"+doReact+":"+doReact2);
+if (ignore>1) {
+ignore=0;
+doReact=0;
+}
+var h=Math.round(canvas.height/40);
+var h1=Math.round(canvas.height/20);
+for (var i1=0; i1<amount; i1++) {
+c.putImageData(savCanvas[i1],((1+h)*(h+2))+2,h+(h*i1)+1);
+}
+}
 function changeC() {
+if (ignore>=1) {
+} else {
 if (count==1) {
 count=0;
 color1="rgb(255, 255, 0)";//1
@@ -227,6 +272,7 @@ color5="rgb(255, 132, 0)"; //orange
 color6="rgb(0,51,0)"; // mörkgrön
 }
 showC();
+}
 }
 window.setTimeout("showC()", 40);
 function setC(p) {
@@ -299,10 +345,10 @@ for (var i1=0; i1<h+1; i1++) {
 switch (cm.get(i1+":"+i)) {
 case 0:
 savColor={
-R: 255,
-G: 255,
-B: 255,
-A: 255};
+R: 0,
+G: 0,
+B: 0,
+A: 0};
 break;
 case 1:
 savColor={
