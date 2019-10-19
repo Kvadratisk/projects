@@ -1,0 +1,410 @@
+<html>
+<head>
+<title>Test</title>
+<style>
+html, body {
+width: 100%;
+height: 100%;
+margin: 0px;
+border: 0;
+overflow: hidden; /*  Disable scrollbars */
+display: block;  /* No floating content on sides */
+}
+</style>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body bgcolor="aqua">
+<canvas id="test" onMouseMove="getPos2(event)" onClick="getPos(event)" style='position:absolute; left:0px; top:0px;'>test&aring; &auml; &ouml; &Aring; &Auml; &Ouml; </canvas>
+<script>
+var c = document.getElementById("test").getContext("2d"); //canvas
+var canvas = document.getElementById("test");
+var x=0; //starta allt
+var y=0;
+var doReact=0;
+var test10=0;
+alert("Kontroller:\n0:cyklande färger\n1-6: fasta färger\n7:sudd\ns:spara bild\np:miniatyr av bilden ritas ut\na:ritar/trycker kontinuerligt, rekomenderar att använda med fasta färger och inte cykel avsluta med b\nw:för att rita med sparade bilderna, cyklar\ns, för att spara, skriv siffra mellan 0-4,");
+var color1="rgb(255, 255, 0)";
+var color2="rgb(255, 0, 0)";
+var color3="rgb(0, 51, 204)";
+var color4="rgb(100, 255, 100)";
+var color5="rgb(255, 255, 255)";
+var color6="rgb(0, 0, 0)";
+var tapet;
+var image=-1;
+var amount=4;
+var savCanvas=[];
+var savColor={
+R: 0,
+G: 255,
+B: 0,
+A: 255}
+var add=0;
+var cm = new Map(); //sparar färgerna
+cm.set("0",0); //sätter värdet för showC
+var mX;
+var mY;
+var mPos;
+var doReact2=0;
+var color;
+var time=0;
+var mode=0;
+document.addEventListener("keydown", getKey);
+function getKey(event){ //reagerar på knapptryckningar
+var key1 = event.key;
+switch (key1) {
+case "0":
+test10=0;
+break;
+case "1":
+test10=1;
+break;
+case "2":
+test10=2;
+break;
+case "3":
+test10=3;
+break;
+case "4":
+test10=4;
+break;
+case "5":
+test10=5;
+break;
+case "6":
+test10=6;
+break;
+case "7":
+test10=7;
+break;
+case "s":
+var x10=prompt();
+save(x10);
+break;
+case "p":
+var x10=prompt();
+place(x10);
+break;
+case "w":
+if (doReact==0 && image <= amount) {
+doReact=1;
+image++;
+} else {
+doReact=0;
+}
+break;
+case "a":
+doReact2=1;
+break;
+case "b":
+doReact2=0;
+break;
+case "ArrowLeft":
+changeC();
+}
+}
+canvas.width = window.innerWidth;//sätter canvasens storlek
+canvas.height = window.innerHeight;//till fönstrets
+x=canvas.width;
+y=canvas.height;
+var h=Math.round(canvas.height/40);
+for (var i = 0; i<h+1; i++) {
+for (var i1=0; i1<h+1; i1++) {
+cm.set(i+":"+i1,0);
+}
+}
+//var saveCanvas = c.createImageData(h+1,h+1);
+for (var i=0; i<amount; i++) {
+savCanvas[i] = c.createImageData(h+1,h+1);
+}
+c.fillStyle="#FFFFFF";
+function backround() { //slumpad bakgrundsfärg.
+var rand = Math.floor((Math.random() * 6) + 1); //slumpmässigt nummer mellan 1-6
+if (rand==6) {
+//color1="rgb(0, 255, 0)"; //grön
+tapet="rgb(0,255,0)";
+} else {
+//color1="rgb(85, 85, 187)"; //blåaktig
+tapet="rgb(85, 85, 187)";
+}
+//c.fillStyle=color1;
+//c.fillRect(0,0,x,y);
+document.body.style.backgroundColor = tapet;
+}
+function intReact() { //ruta runt interaktivt område
+var test3=Math.round(canvas.height/20);
+var test4=Math.round(canvas.height/40);
+var te=test3-test4;
+//var test3=Math.round(canvas.width/40);
+//var test4=Math.round(canvas.width/80);
+c.fillStyle="#000000";
+c.fillRect(test4,test4,h*(2+test4)+3,(h+1)*(1+test4)+2);
+c.fillStyle=tapet;
+c.fillRect(test4+1,test4+1,h*(2+test4)+1,(h+1)*(1+test4));
+}
+window.setTimeout("intReact()", 10);
+function react(i,o) { // reagerar på mustryck
+var h=Math.round(canvas.height/40);
+var h1=Math.round(canvas.height/20);
+for (var i2=0; i2<h+1; i2++) {
+for (var i1=0; i1<h+1; i1++) {
+if (1+h+h*i2+(i2+(i2*add))<=i && 1+h+(1+h)+h*i2+(i2+(i2*add))>i && 1+h+h*i1+(i1+(i1*add))<=o && 1+h+(1+h)+h*i1+(i1+(i1*add))>o) {
+setC(i1+":"+i2);
+c.fillStyle=color;
+c.fillRect(1+h+h*i2+(i2+(i2*add)),1+h+h*i1+(i1+(i1*add)),1+h,1+h);
+}
+}
+}
+}
+function getPos(e){
+var test16=e.screenX;
+var test17=e.screenY;
+//mX=test16;//e.clientX;
+//mY=test17;//e.clientY;
+mX=e.clientX;
+mY=e.clientY;
+switch (doReact) {
+case 0:
+react(mX,mY);
+break;
+case 1:
+if (image>=amount) {
+image=0;
+}
+console.log(image);
+react2(mX,mY,image);
+}
+}
+function getPos2(e) {
+mX=e.clientX;
+mY=e.clientY;
+switch (doReact2) {
+case 1:
+react(mX,mY);
+}
+}
+//window.onMouseMove=react2;
+function react2(i,o,l) {
+var h=Math.round(canvas.height/40);
+var h1=Math.round(canvas.height/20);
+for (var i2=0; i2<h+1; i2++) {
+for (var i1=0; i1<h+1; i1++) {
+if (1+h+h*i2+(i2+(i2*add))<=i && 1+h+(1+h)+h*i2+(i2+(i2*add))>i && 1+h+h*i1+(i1+(i1*add))<=o && 1+h+(1+h)+h*i1+(i1+(i1*add))>o) {
+c.putImageData(savCanvas[l],1+h+h*i2+(i2+(i2*add)),1+h+h*i1+(i1+(i1*add)),0,0,1+h,1+h);
+}
+}
+}
+}
+backround();
+var count=0;
+function showC() {
+var h=Math.round(canvas.height/40);
+var h1=Math.round(canvas.height/20);
+var w=Math.round(canvas.width/40);
+var w1=Math.round(canvas.width/80);
+for (var i1=0; i1<7; i1++) {
+setC("0");
+c.fillStyle=color;
+c.fillRect(((1+h)*(h+2))+2,h+(h*i1)+1,h1-h,h1-h);
+}
+cm.set("0",0);
+}
+function changeC() {
+if (count==1) {
+count=0;
+color1="rgb(255, 255, 0)";//1
+color2="rgb(255, 0, 0)";//2
+color3="rgb(0, 51, 204)";//3
+color4="rgb(100, 255, 100)";//4
+color5="rgb(255, 255, 255)";//5
+color6="rgb(0, 0, 0)";//6
+} else {
+count++;
+color1="rgb(255,0,255)"; //rosa 7
+color2="rgb(200,0,200)"; //lila 8
+color3="rgb(102, 51, 0)"; //brun 9
+color4="rgb(255, 255, 164)"; //bieche 10
+color5="rgb(255, 132, 0)"; //orange
+color6="rgb(0,51,0)"; // mörkgrön
+}
+showC();
+}
+window.setTimeout("showC()", 40);
+function setC(p) {
+time=(cm.get(p)+1);
+if (time>7) {
+time=time-7;
+}
+cm.set(p,time);
+switch (test10) {
+case 0:
+switch (time) {
+case 1:
+color=color1;
+break;
+case 2:
+color=color2;
+break;
+case 3:
+color=color3;
+break;
+case 4:
+color=color4;
+break;
+case 5:
+color=color5;
+break;
+case 6:
+color=color6;
+break;
+case 7:
+color=tapet;//color1;
+time=0;
+cm.set(p,time);
+}
+break;
+case 1:
+color=color1;
+time=1;
+break;
+case 2:
+color=color2;
+time=2;
+break;
+case 3:
+color=color3;
+time=3;
+break;
+case 4:
+color=color4;
+time=4;
+break;
+case 5:
+color=color5;
+time=5;
+break;
+case 6:
+color=color6;
+time=6;
+break;
+case 7:
+color=tapet;//color1;
+time=0;
+}
+cm.set(p,time+(count*7));
+}
+function save(l) {
+saveCanvas=savCanvas[l];
+for (var i = 0; i<h+1; i++) {
+for (var i1=0; i1<h+1; i1++) {
+switch (cm.get(i1+":"+i)) {
+case 0:
+savColor={
+R: 255,
+G: 255,
+B: 255,
+A: 255};
+break;
+case 1:
+savColor={
+R: 255,
+G: 255,
+B: 0,
+A: 255};
+break;
+case 2:
+savColor={
+R: 255,
+G: 0,
+B: 0,
+A: 255};
+break;
+case 3:
+savColor={
+R: 0,
+G: 51,
+B: 204,
+A: 255};
+break;
+case 4:
+savColor={
+R: 0,
+G: 255,
+B: 0,
+A: 255};
+break;
+case 5:
+savColor={
+R: 255,
+G: 255,
+B: 255,
+A: 255};
+break;
+case 6:
+savColor={
+R: 0,
+G: 0,
+B: 0,
+A: 255};
+break;
+case 8:
+savColor={
+R: 255,
+G: 0,
+B: 255,
+A: 255};
+break;
+case 9:
+savColor={
+R: 200,
+G: 0,
+B: 200,
+A: 255};
+break;
+case 10:
+savColor={
+R: 102,
+G: 52,
+B: 0,
+A: 255};
+break;
+case 11:
+savColor={
+R: 255,
+G: 255,
+B: 164,
+A: 255};
+break;
+case 12:
+savColor={
+R: 255,
+G: 132,
+B: 0,
+A: 255};
+break;
+case 13:
+savColor={
+R: 0,
+G: 51,
+B: 0,
+A: 255};
+}
+savCanvas[l].setPixel(i,i1,savColor);
+}
+}
+}
+function place(l) {
+var h=Math.round(canvas.height/40);
+c.putImageData(savCanvas[l],(1+h)*(h+2),(1+h)*(h+2));
+}
+for (var i1 = 0; i1<amount; i1++) {
+savCanvas[i1].setPixel=function(x,y,c){
+var i=(x+y*this.width)*4;
+this.data[i]=c.R;
+this.data[i+1]=c.G;
+this.data[i+2]=c.B;
+this.data[i+3]=c.A;
+}
+}
+</script>
+</body>
+</html>
