@@ -21,17 +21,24 @@ var canvas = document.getElementById("test");
 var x=0; //starta allt
 var y=0;
 var doReact=0;
-var test10=0;
+var test10=0.0;
 function controls() {
 alert("Kontroller:\n0:cyklande färger\n1-6: fasta färger\n7:sudd\ns:spara bild\np:miniatyr av bilden ritas ut\na:ritar/trycker kontinuerligt, rekomenderar att använda med fasta färger och inte cykel avsluta med b\nhögerpil:för att rita med sparade bilderna, cyklar\ns, för att spara, skriv siffra mellan 0-7,\nvänsterpil byter färger\n n: den här hjälprutan");
 }
 controls();
-var color1="rgb(255, 255, 0)";
-var color2="rgb(255, 0, 0)";
-var color3="rgb(0, 51, 204)";
-var color4="rgb(100, 255, 100)";
-var color5="rgb(255, 255, 255)";
-var color6="rgb(0, 0, 0)";
+var colors=[];
+colors[1]="rgb(255, 255, 0)"; //gul
+colors[2]="rgb(255, 0, 0)"; //röd
+colors[3]="rgb(0, 51, 204)";//blå
+colors[4]="rgb(100, 255, 100)";//något
+colors[5]="rgb(255, 255, 255)";//något
+colors[6]="rgb(0, 0, 0)";//något
+colors[8]="rgb(255,0,255)"; //rosa 7
+colors[9]="rgb(200,0,200)"; //lila 8
+colors[10]="rgb(102, 51, 0)"; //brun 9
+colors[11]="rgb(255, 255, 164)"; //bieche 10
+colors[12]="rgb(255, 132, 0)"; //orange
+colors[13]="rgb(0,80,0)"; // mörkgrön
 var tapet;
 var image=0;
 var ignore=0;
@@ -49,11 +56,21 @@ var mX;
 var mY;
 var mPos;
 var doReact2=0;
-var color;
+var colors;
 var time=0;
 var mode=0;
+var keyPress;
 document.addEventListener("keydown", getKey);
-function getKey(event){ //reagerar på knapptryckningar
+document.addEventListener("keyup", keys123);
+function keys123(event) {
+var key2=event.key;
+//alert(keyPress+":"+key2);
+if (keyPress=="a" && key2=="a") {
+doReact2=0;
+keyPress="0";
+}
+}
+function getKey(event) { //reagerar på knapptryckningar
 var key1 = event.key;
 if (ignore==1) {
 if (key1=="ArrowRight") {
@@ -112,18 +129,19 @@ doReact=0;
 }
 break;
 case "a":
+keyPress="a";
 doReact2=1;
 break;
 case "b":
 doReact2=0;
 break;
 case "ArrowLeft":
-changeC();
 test10=0;
+changeC();
 break;
 case "ArrowRight":
-changeCC();
 test10=0;
+changeCC();
 break;
 }
 }
@@ -142,6 +160,7 @@ cm.set(i+":"+i1,0);
 for (var i=0; i<amount; i++) {
 savCanvas[i] = c.createImageData(h+1,h+1);
 }
+var imgdat=c.createImageData(1,1);
 c.fillStyle="#FFFFFF";
 function backround() { //slumpad bakgrundsfärg.
 var rand = Math.floor((Math.random() * 6) + 1); //slumpmässigt nummer mellan 1-6
@@ -154,6 +173,7 @@ tapet="rgb(85, 85, 187)";
 }
 //c.fillStyle=color1;
 //c.fillRect(0,0,x,y);
+colors[7]=tapet;
 document.body.style.backgroundColor = tapet;
 }
 function intReact() { //ruta runt interaktivt område
@@ -171,10 +191,15 @@ window.setTimeout("intReact()", 10);
 function react(i,o) { // reagerar på mustryck
 var h=Math.round(canvas.height/40);
 var h1=Math.round(canvas.height/20);
-for (var i3=0; i3<8; i3++) {
-if ((1+h)*(h+2)+2 <=i && (1+h)*(h+2)+2+(h1-h)>i && h+(h*i3)+1 <=o && h+(h*i3)+1+(h1-h)>o) {
-console.log(1+i3+"color");
-test10=i3+1;
+if (ignore==1) {
+} else {
+for (var i4=0; i4<2; i4++) {
+for (var i3=0; i3<7-i4; i3++) {
+if (((1+h)*i4)+(1+h)*(h+2)+2 <=i && ((1+h)*i4)+(1+h)*(h+2)+2+(h1-h)>i && h+(h*i3)+1 <=o && h+(h*i3)+1+(h1-h)>o) {
+console.log(1+(i3*(i4+1))+"color"+":"+i4+":"+i3+":"+i3+"."+i4);
+test10=(parseFloat(i3+"."+i4)+1);
+console.log(parseFloat(test10));
+}
 }
 }
 for (var i2=0; i2<h+1; i2++) {
@@ -183,6 +208,7 @@ if (1+h+h*i2+(i2+(i2*add))<=i && 1+h+(1+h)+h*i2+(i2+(i2*add))>i && 1+h+h*i1+(i1+
 setC(i1+":"+i2);
 c.fillStyle=color;
 c.fillRect(1+h+h*i2+(i2+(i2*add)),1+h+h*i1+(i1+(i1*add)),1+h,1+h);
+}
 }
 }
 }
@@ -216,11 +242,36 @@ function react2(i,o,k) {
 var h=Math.round(canvas.height/40);
 var h1=Math.round(canvas.height/20);
 console.log(k);
-for (var i2=0; i2<h+1; i2++) {
-for (var i1=0; i1<h+1; i1++) {
-if (1+h+h*i2+(i2+(i2*add))<=i && 1+h+(1+h)+h*i2+(i2+(i2*add))>i && 1+h+h*i1+(i1+(i1*add))<=o && 1+h+(1+h)+h*i1+(i1+(i1*add))>o) {
-c.putImageData(savCanvas[k],1+h+h*i2+(i2+(i2*add)),1+h+h*i1+(i1+(i1*add)),0,0,1+h,1+h);
+var te99=c.createImageData(1+h,1+h);
+te99.setPixel=function(x,y,c){
+var i=(x+y*this.width)*4;
+this.data[i]=c.R;
+this.data[i+1]=c.G;
+this.data[i+2]=c.B;
+this.data[i+3]=c.A;
 }
+te99.getPixel=function(x,y){
+var i=(x+y*this.width)*4;
+return {R:this.data[i],
+G:this.data[i+1],
+B:this.data[i+2],
+A:this.data[i+3]
+}
+}
+for (var i2=0; i2<h+1; i2++) {
+for (var i1=0; i1<h+1; i1++) { //now work
+if (1+h+h*i2+(i2+(i2*add))<=i && 1+h+(1+h)+h*i2+(i2+(i2*add))>i && 1+h+h*i1+(i1+(i1*add))<=o && 1+h+(1+h)+h*i1+(i1+(i1*add))>o) {
+var x=1+h+h*i2+(i2+(i2*add));
+var y=1+h+h*i1+(i1+(i1*add));
+imgdat=c.getImageData(x,y,1+h,1+h);
+fixCanvas(imgdat,h,k,x,y,te99);
+c.putImageData(savCanvas[k],x,y,0,0,1+h,1+h);
+}
+}
+}
+for (var i3=0; i3<h+1; i3++) {
+for (var i4=0; i4<h+1; i4++) {
+savCanvas[k].setPixel(i3,i4,te99.getPixel(i3,i4));
 }
 }
 }
@@ -229,11 +280,17 @@ var count=0;
 function showC() {
 var h=Math.round(canvas.height/40);
 var h1=Math.round(canvas.height/20);
-for (var i1=0; i1<7; i1++) {
+for (var i2=0; i2<2; i2++) {
+for (var i1=0; i1<7-i2; i1++) {
 setC("0");
 c.fillStyle=color;
-c.fillRect(((1+h)*(h+2))+2,h+(h*i1)+1,h+1,h+1);
+c.fillRect(((1+h)*i2)+((1+h)*(h+2))+2,h+(h*i1)+1,h+1,h+1);
 }
+}
+c.fillStyle="#000000";
+c.fillRect(((1+h))+((1+h)*(h+1))+2,h+(h*6)+1,h+1,h+1);
+c.fillStyle=tapet;
+c.fillRect(((1+h))+((1+h)*(h+1))+3,h+(h*6)+2,h-1,h-1);
 cm.set("0",0);
 }
 function changeCC() {
@@ -276,60 +333,66 @@ showC();
 }
 window.setTimeout("showC()", 40);
 function setC(p) {
-time=(cm.get(p)+1);
-if (time>7) {
-time=time-7;
-}
+time=(cm.get(p));
+time++;
 cm.set(p,time);
 switch (test10) {
 case 0:
-switch (time) {
-case 1:
-color=color1;
-break;
-case 2:
-color=color2;
-break;
-case 3:
-color=color3;
-break;
-case 4:
-color=color4;
-break;
-case 5:
-color=color5;
-break;
-case 6:
-color=color6;
-break;
-case 7:
-color=tapet;//color1;
-time=0;
+for (var i=0; i<14; i++) {
+console.log(time);
+if (time==i) {
+color=colors[i];
+console.log(color);
 cm.set(p,time);
 }
+}
+break;
+case 1.1:
+color=colors[8];
+time=1.1;
+break;
+case 2.1:
+color=colors[9];
+time=2.1;
+break;
+case 3.1:
+color=colors[10];
+time=3.1;
+break;
+case 4.1:
+color=colors[11];
+time=4.1;
+break;
+case 5.1:
+color=colors[12];
+time=5.1;
+break;
+case 6.1:
+color=colors[13];
+time=6.1;
 break;
 case 1:
-color=color1;
+color=colors[1];
 time=1;
 break;
 case 2:
-color=color2;
+color=colors[2];
 time=2;
 break;
 case 3:
-color=color3;
+color=colors[3];
 time=3;
 break;
 case 4:
-color=color4;
+color=colors[4];
 time=4;
 break;
 case 5:
-color=color5;
+color=colors[5];
 time=5;
 break;
 case 6:
-color=color6;
+color=colors[6];
 time=6;
 break;
 case 7:
@@ -343,6 +406,48 @@ saveCanvas=savCanvas[l];
 for (var i = 0; i<h+1; i++) {
 for (var i1=0; i1<h+1; i1++) {
 switch (cm.get(i1+":"+i)) {
+case 1.1:
+savColor={
+R: 255,
+G: 0,
+B: 255,
+A: 255};
+break;
+case 2.1:
+savColor={
+R: 200,
+G: 0,
+B: 200,
+A: 255};
+break;
+case 3.1:
+savColor={
+R: 102,
+G: 51,
+B: 0,
+A: 255};
+break;
+case 4.1:
+savColor={
+R: 255,
+G: 255,
+B: 264,
+A: 255};
+break;
+case 5.1:
+savColor={
+R: 255,
+G: 132,
+B: 0,
+A: 255};
+break;
+case 6.1:
+savColor={
+R: 0,
+G: 80,
+B: 0,
+A: 255};
+break;
 case 0:
 savColor={
 R: 0,
@@ -440,6 +545,7 @@ savCanvas[l].setPixel(i,i1,savColor);
 }
 function place(l) {
 var h=Math.round(canvas.height/40);
+console.log(savCanvas[l].getPixel(0,0));
 c.putImageData(savCanvas[l],(1+h)*(h+2),(1+h)*(h+2));
 }
 for (var i1 = 0; i1<amount; i1++) {
@@ -449,6 +555,62 @@ this.data[i]=c.R;
 this.data[i+1]=c.G;
 this.data[i+2]=c.B;
 this.data[i+3]=c.A;
+}
+savCanvas[i1].getPixel=function(x,y){
+var i=(x+y*this.width)*4;
+if (this.data[i+3]==0) {
+return 0;
+} else {
+return {R:this.data[i],
+G:this.data[i+1],
+B:this.data[i+2],
+A:this.data[i+3]
+}
+}
+}
+}
+var imgDat1=c.createImageData(10,10);
+imgDat1.setPixel=function(x,y,c){
+var i=(x+y*this.width)*4;
+this.data[i]=c.R;
+this.data[i+1]=c.G;
+this.data[i+2]=c.B;
+this.data[i+3]=c.A;
+}
+imgDat1.setPixel(1,1,{
+R: 0,
+G: 0,
+B: 0,
+A: 0}); 
+imgDat1.getPixel=function(x,y){
+return {R:this.data[i],
+G:this.data[i+1],
+B:this.data[i+2],
+A:this.data[i+3]
+}
+}
+function fixCanvas(imgdat,o,k,x1,y1,te99) {
+for (var i3=0; i3<h+1; i3++) {
+for (var i4=0; i4<h+1; i4++) {
+te99.setPixel(i3,i4,savCanvas[k].getPixel(i3,i4));
+}
+}
+imgdat.getPixel=function(x,y){
+var i=(x+y*this.width)*4;
+return {R:this.data[i],
+G:this.data[i+1],
+B:this.data[i+2],
+A:this.data[i+3]
+}
+}
+//console.log(not);
+for (var i = 0; i<o+1; i++) {
+for (var i1 = 0; i1<o+1; i1++) {
+var temp=savCanvas[k].getPixel(i,i1);
+if (temp==0) {
+savCanvas[k].setPixel(i,i1,imgdat.getPixel(i,i1));
+}
+}
 }
 }
 </script>
