@@ -1,0 +1,90 @@
+<html>
+<head>
+<style type="text/css">
+#test {
+height:50%;
+}
+</style>
+<title>Gameshark</title>
+</head>
+<body>
+<div id="test">
+<textarea id="test1" placeholder="Bytes to write" cols="100" rows="10">
+</textarea>
+</div>
+<textarea id ="test2" placeholder="To location (in hex so DA80 for stored pokemon)"cols="30" rows="3">
+</textarea>
+<input type="button" onClick="test();">
+<script language="javascript">
+var t3=[];
+var startPos="DA80";
+var supported=["0","1","2","3","4","5","6","7","8","9","A","B","C","D","E","F","a","b","c","d","e","f"];
+function test() {
+var l = document.getElementById("test1").value;
+l=l.toString();
+var t = l.split("");
+var t2="";
+for (var i=0; i<l.length; i++) {
+if (supported.includes(t[i])) {
+t2=t2+t[i];
+}
+}
+if (!(t2.length%2==0)) {
+alert("Theres an uneven number of 'half-bytes'!");
+return;
+}
+for (var i=0; i<t2.length/2; i++) {
+t3[i]=t2[i*2].concat(t2[i*2+1]);
+}
+var i1=document.getElementById("test2").value;
+if (i1.toString().length==4 && !i1=="") {
+let startpos1="";
+for (var i = 0; i<4; i++) {
+if (supported.includes(i1.charAt(i))) {
+startpos1=startpos1+i1.charAt(i);
+}
+}
+if (startpos1.length!==4) {
+alert("Incorrect locaion");
+return;
+}
+startPos=startpos1;
+} else {
+if (!i1=="") {
+alert("Location must be exactly 2 bytes!");
+return;
+}
+}
+let start=startPos.slice(0,2);
+let start1=startPos.slice(2,4);
+let t4="";
+for (var i=0; i<t3.length; i++) {
+t4=t4+"01"+t3[i]+""+start1+""+start+"<br>";
+let tA=start+"00";
+tA=parseInt(tA,16);
+tA=parseInt(tA);
+let tB=parseInt(start1,16);
+let tc=tA+tB;
+if (tc<65535) {
+tc++;
+} else {
+alert("Reached end of memory (address 0xFFFF)");
+return;
+}
+let tD=tc.toString(16);
+start=tD.slice(0,2);
+start1=tD.slice(2,4);
+}
+if (l=="") {
+alert("Please enter some bytes");
+return;
+} else {
+t4=t4.small();
+let title1=document.title;
+document.write("<br>"+t4.toUpperCase());
+document.title=title1;
+}
+}
+</script>
+  </body>
+</html>
