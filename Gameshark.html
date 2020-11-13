@@ -1,21 +1,65 @@
 <html>
 <head>
 <style type="text/css">
-#test {
+#test4 {
+text-align:center;
+position:relative;
+}
+#test5 {
 height:50%;
+right:30%;
+text-align:center;
+}
+#test6 {
+top:4%;
+text-align:center;
+position:relative;
+}
+#test7 {
+top:7%;
+text-align:center;
+position:relative;
+}
+textarea::-webkit-input-placeholder {
+color: #0F0;
+}
+textarea:-moz-placeholder {
+color: #0F0;  
+}
+textarea::-moz-placeholder {
+color: #0F0;  
+}
+textarea:-ms-input-placeholder {
+color: #0F0;  
+}
+textarea::placeholder {
+color: #0F0;  
 }
 </style>
 <title>Gameshark</title>
 </head>
-<body>
-<div id="test">
-<textarea id="test1" placeholder="Bytes to write" cols="100" rows="10">
-</textarea>
+<body bgcolor="black" text="#00FF00">
+<div id="test4">
+<h1>Enter bytes and press enter</h1>
 </div>
-<textarea id ="test2" placeholder="To location (in hex so DA80 for stored pokemon)"cols="30" rows="3">
+<div id="test5">
+<textarea id="test1" STYLE="color: #00FF00; font-family: Verdana; font-weight: bold; font-size: 10px; background-color: #222222;" onkeypress="check();" placeholder="Bytes to write" cols="100" rows="10">
 </textarea>
-<input type="button" value="Get GameShark codes" onClick="test();">
+<div id="test6">
+<textarea id ="test2" STYLE="color: #00FF00; font-family: Verdana; font-weight: bold; font-size: 10px; background-color: #222222;" placeholder="To location (in hex so DA80 for stored pokemon)"cols="30" rows="3">
+</textarea>
+<br>
+</div>
+<div id="test7">
+<input type="button" value="Get GameShark code" onClick="test();">
+</div>
 <script language="javascript">
+function check() {
+var l7 = window.event.keyCode;
+if (l7==13) {
+test();
+}
+}
 var t3=[];
 var startPos="DA80";
 var supported=["0","1","2","3","4","5","6","7","8","9","A","B","C","D","E","F","a","b","c","d","e","f"];
@@ -59,7 +103,7 @@ let start=startPos.slice(0,2);
 let start1=startPos.slice(2,4);
 let t4="";
 for (var i=0; i<t3.length; i++) {
-t4=t4+"01"+t3[i]+""+start1+""+start+"<br>";
+t4=t4+"01"+t3[i]+""+start1+""+start+"\n";
 let tA=start+"00";
 tA=parseInt(tA,16);
 tA=parseInt(tA);
@@ -68,7 +112,7 @@ let tc=tA+tB;
 if (tc<65535) {
 tc++;
 } else {
-alert("Reached end of memory,(address 0xFFFF)");
+alert("Reached end of memory (address 0xFFFF)");
 return;
 }
 let tD=tc.toString(16);
@@ -79,9 +123,10 @@ if (l=="") {
 alert("Please enter some bytes");
 return;
 } else {
-t4=t4.small();
+//t4=t4.small();
 let title1=document.title;
-document.write("<br>"+t4.toUpperCase());
+document.getElementById("test1").value=t4.toUpperCase();
+//document.write("<br>"+t4.toUpperCase()+"<br>");
 document.title=title1;
 }
 }
