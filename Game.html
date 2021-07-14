@@ -1,0 +1,359 @@
+<html>
+<head>
+<style = "text/css">
+#align {
+top:0%;
+left:0%;
+position:absolute;
+}
+</style>
+<title>Engine</title>
+</head>
+<body bgColor="black" onresize="rezise()" onkeydown="keyPress(event)" onkeyup="keyUp(event)">
+<div id="align">
+<canvas id = "display">
+</canvas>
+</div>
+<script>
+var canvas = document.getElementById("display");
+var field = canvas.getContext("2d");
+var border = "#000000";
+var playerPos = [0,0];
+
+canvas.height = window.innerHeight;
+canvas.width = window.innerWidth;
+
+var height = canvas.height;
+var actionKeys = [87,83,65,68,32]; //87 == up ; 83 == down ; 65 == left ; 68 == right; 32 == space ;
+var upcounter = 0;
+var downcounter = 0;
+var leftcounter = 0;
+var rightcounter = 0;
+var upsteps = 1;
+var downsteps = 1;
+var leftsteps = 1;
+var rightsteps = 1;
+var width = canvas.width;
+var pressed = [];
+var keyArray = [];
+var x = height/40;
+var mode = 0;
+var y = height/40;
+var x1 = width-(2*x);
+var y1 = height-(2*y);
+var x2 = x1-x;
+var y2 = y1-y;
+var tilesX = Math.round(x2/16);
+var tilesY = Math.round(y2/16);
+var image = field.createImageData(32, 32);
+var saveBackground;
+var imageData=image.data;
+
+image.setPixel = function(numXpos,numYpos,colorR,colorG,colorB,colorA) {
+var slot = (numXpos+(numYpos*image.width))*4;
+imageData[slot]=colorR;
+imageData[slot+1]=colorG;
+imageData[slot+2]=colorB;
+imageData[slot+3]=colorA;
+}
+
+image.setRect= function(numXposStart,numYposStart,numXposLength,numYposLength,colorR,colorG,colorB,colorA) {
+	for (var i = numXposStart; i<numXposStart+numXposLength; i++) {
+		for (var i1 = numYposStart; i1 < numYposStart+numYposLength; i1++) {
+		image.setPixel(i,i1,colorR,colorG,colorB,colorA);
+		}
+	}
+}
+
+image.setRect(2,2,28,28,170,240,240,255);
+image.setRect(4,4,8,8,0,0,0,255);
+image.setRect(20,4,8,8,0,0,0,255);
+image.setRect(6,6,4,4,255,255,255,255);
+image.setRect(22,6,4,4,255,255,255,255);
+image.setRect(6,20,20,4,0,0,0,255);
+
+x=(width-tilesX*16)/2;
+y=(height-tilesY*16)/2;
+x1=width-(2*x);
+y1=height-(2*y);
+field.fillStyle=border;
+field.fillRect(0,0,width,height);
+field.fillStyle="#808080";
+field.fillRect(x,y,x1,y1);
+
+for (var i = 0; i < tilesY-4; i++) {
+setTile(0,i,"#303030",16);
+setTile(tilesX-1,i,"#303030",16);
+}
+
+for (var i = 0; i<tilesX; i++) {
+setTile(i,tilesY-1,"#2020A0",16);
+setTile(i,tilesY-2,"#2020A0",16);
+setTile(i,tilesY-3,"#2020A0",16);
+setTile(i,tilesY-4,"#2020A0",16);
+setTile(i,tilesY-5,"#A0A0D0",16);
+}
+
+randomJunk();
+
+var yMax = (Math.round(((tilesY-7)*16))+y);
+var yMin = y;
+var xMax = x+((tilesX-3)*16);
+var xMin = x+16;
+
+window.setInterval("timedFunction();",10);
+
+function setTile(x5,y5,z5,t5) {
+if (x5>tilesX || y5>tilesY) {
+return false;
+}
+field.fillStyle=z5;
+field.fillRect(x+x5*t5,y+y5*t5,t5+1,t5+1);
+}
+
+function rezise() {
+canvas.height = window.innerHeight;
+canvas.width = window.innerWidth;
+height = canvas.height;
+width = canvas.width;
+x = height/40;
+y = height/40;
+x1 = width-(2*x);
+y1 = height-(2*y);
+x2 = x1-x;
+y2 = y1-y;
+tilesX = Math.round(x2/16);
+tilesY = Math.round(y2/16);
+x=(width-tilesX*16)/2;
+y=(height-tilesY*16)/2;
+x1=width-(2*x);
+y1=height-(2*y);
+field.fillStyle=border;
+field.fillRect(0,0,width,height);
+field.fillStyle="#808080";
+field.fillRect(x,y,x1,y1);
+randomJunk();
+}
+
+function moveEyes(e) {
+switch (e) {
+case 0: //neutral
+image.setRect(4,4,8,8,0,0,0,255);
+image.setRect(20,4,8,8,0,0,0,255);
+image.setRect(6,6,4,4,255,255,255,255);
+image.setRect(22,6,4,4,255,255,255,255);
+break;
+case 1: //left
+image.setRect(4,4,8,8,0,0,0,255);
+image.setRect(20,4,8,8,0,0,0,255);
+image.setRect(4,6,4,4,255,255,255,255);
+image.setRect(20,6,4,4,255,255,255,255);
+break;
+case 2: //up
+image.setRect(4,4,8,8,0,0,0,255);
+image.setRect(20,4,8,8,0,0,0,255);
+image.setRect(6,4,4,4,255,255,255,255);
+image.setRect(22,4,4,4,255,255,255,255);
+break;
+case 3: //right
+image.setRect(4,4,8,8,0,0,0,255);
+image.setRect(20,4,8,8,0,0,0,255);
+image.setRect(8,6,4,4,255,255,255,255);
+image.setRect(24,6,4,4,255,255,255,255);
+break;
+case 4: // down
+image.setRect(4,4,8,8,0,0,0,255);
+image.setRect(20,4,8,8,0,0,0,255);
+image.setRect(6,8,4,4,255,255,255,255);
+image.setRect(22,8,4,4,255,255,255,255);
+break;
+case 5: //down-left
+image.setRect(4,4,8,8,0,0,0,255);
+image.setRect(20,4,8,8,0,0,0,255);
+image.setRect(4,8,4,4,255,255,255,255);
+image.setRect(20,8,4,4,255,255,255,255);
+break;
+case 6: //left-up
+image.setRect(4,4,8,8,0,0,0,255);
+image.setRect(20,4,8,8,0,0,0,255);
+image.setRect(4,4,4,4,255,255,255,255);
+image.setRect(20,4,4,4,255,255,255,255);
+break;
+case 7: //right-up
+image.setRect(4,4,8,8,0,0,0,255);
+image.setRect(20,4,8,8,0,0,0,255);
+image.setRect(8,4,4,4,255,255,255,255);
+image.setRect(24,4,4,4,255,255,255,255);
+break;
+case 8: //right-down
+image.setRect(4,4,8,8,0,0,0,255);
+image.setRect(20,4,8,8,0,0,0,255);
+image.setRect(8,8,4,4,255,255,255,255);
+image.setRect(24,8,4,4,255,255,255,255);
+break;
+}
+}
+
+function randomJunk() {
+colorLines();
+for (var i = 0; i < tilesY-4; i++) {
+setTile(0,i,"#303030",16);
+setTile(tilesX-1,i,"#303030",16);
+}
+
+for (var i = 0; i<tilesX; i++) {
+setTile(i,tilesY-1,"#2020A0",16);
+setTile(i,tilesY-2,"#2020A0",16);
+setTile(i,tilesY-3,"#2020A0",16);
+setTile(i,tilesY-4,"#2020A0",16);
+setTile(i,tilesY-5,"#A0A0D0",16);
+}
+}
+
+function colorLines() {
+	for (var i = 0; i <4; i++) {
+		var rng = Math.round(Math.random()*(tilesX-1));
+		var rng1 = Math.round(Math.random()*(tilesX-1));
+		var rng2 = Math.round(Math.random()*(tilesX-1));
+		var rng3 = Math.round(Math.random()*(tilesX-1));
+		for (var i1 = 0; i1<8; i1++) {
+			setTile(rng,Math.round(Math.random()*i1),"#B0B0B0",16);
+			setTile(rng1,Math.round(Math.random()*i1),"#B0B0F0",16);
+			setTile(rng2,Math.round(Math.random()*i1),"#B0F0B0",16);
+			setTile(rng3,Math.round(Math.random()*i1),"#F0B0B0",16);
+		}
+	}
+}
+
+function timedFunction() {
+	adjustInput();
+	switch (mode) {
+		case 1:
+			if (leftsteps<3 && leftcounter>50) {
+				leftsteps++;
+				leftcounter=0;
+			}
+			leftcounter++;
+		break;
+		case 3:
+		if (rightsteps<3 && rightcounter>50) {
+				rightsteps++;
+				rightcounter=0;
+			}
+			rightcounter++;
+		break;
+	}
+	var test5 = Math.round((tilesX*16)/2)+(y/2);
+	var test6 = Math.round(((tilesY-7)*16)+y);
+	if (saveBackground == null) {
+		saveBackground=field.getImageData(test5+playerPos[0],test6+playerPos[1],32,32);
+	}
+	field.putImageData(saveBackground,test5+playerPos[0],test6+playerPos[1]);
+	switch (mode) {
+		case 1:
+			if (test5+playerPos[0]>xMin) {
+			playerPos[0]-=leftsteps;
+			}
+		break;
+		case 2:
+			if (test6+playerPos[1]>yMin) {
+				playerPos[1]--;
+			}
+		break;
+		case 3:
+			if (test5+playerPos[0]<xMax) {
+			playerPos[0]+=rightsteps;
+			}
+		break;
+		case 4:
+			if (test6+playerPos[1]<yMax) {
+				playerPos[1]++;
+			}
+		break;
+	}
+	saveBackground=field.getImageData(test5+playerPos[0],test6+playerPos[1],32,32);
+	field.putImageData(image,test5+playerPos[0],test6+playerPos[1]);
+}
+
+function keyPress(e) {
+if (!pressed[e.keyCode]) {
+pressed[e.keyCode]=true;
+}
+}
+function keyUp(e) {
+	pressed[e.keyCode]=false;
+	for (var i = 0; i < actionKeys.length; i++) {
+		if (e.keyCode==actionKeys[i]) {
+			switch (actionKeys[i]) {
+			case 65:
+			leftsteps=1;
+			leftcounter=0;
+			break;
+			case 68:
+			rightsteps=1;
+			rightcounter=0;
+			break;
+			}
+		}
+	}
+}
+function adjustInput() {
+var left = false;
+var right = false;
+var up = false;
+var down = false;
+mode = 0;
+for (var i = 0; i < actionKeys.length; i++) {
+if (pressed[actionKeys[i]]) { //87 == up ; 83 == down ; 65 == left ; 68 == right;
+switch (actionKeys[i]) {
+case 87:
+up=true;
+break;
+case 83:
+down=true;
+break;
+case 68:
+right=true;
+break;
+case 65:
+left=true;
+break;
+}
+}
+}
+if (up) {
+mode=2;
+if (down) {
+mode=0;
+}
+}
+if (down) {
+mode = 4;
+if (up) {
+mode = 0;
+}
+}
+if (left != right) {
+if (mode==2) {
+if (left) {
+mode = 6;
+} else {
+mode = 7;
+}
+} else if (mode==4) {
+if (left) {
+mode = 5;
+} else {
+mode = 8;
+}
+} else if (left) {
+mode = 1;
+} else {
+mode = 3;
+}
+}
+moveEyes(mode);
+}
+</script>
+</body>
+</html>
