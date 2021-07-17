@@ -1,0 +1,252 @@
+using System;
+using System.Collections.Generic;
+using System.Diagnostics;
+using System.IO;
+using System.Linq;
+using System.Runtime.InteropServices;
+using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Windows.Forms;
+
+namespace ConsoleLogger
+{
+    class Program
+    {
+        private const int ll_mouse = 14;
+        private const int ll_keyboard = 13;
+        private static LowLevelKeyboardProc kProc = kHook;
+        private static LowLevelMouseProc mProc = mHook;
+        private static IntPtr keyhookID = IntPtr.Zero;
+        private static IntPtr mousehookID = IntPtr.Zero;
+        private static string logger5;
+        private static IntPtr key_Down = (IntPtr)0x0100;
+        private static IntPtr key_Up = (IntPtr)0x0101;
+        private static IntPtr sys_key_Down = (IntPtr)0x0104;
+        private static IntPtr sys_key_Up = (IntPtr)0x0105;
+        public static DateTime time;
+        public static string saveWindow;
+
+        public static long counter;
+
+        public static long counter1;
+
+        public static Dictionary<int, bool> logged;
+
+        public static void Main(string[] args)
+        {
+            keyhookID = SetKeyHook(kProc);
+            mousehookID = SetMouseHook(mProc);
+            counter = 0;
+            counter1 = 0;
+            logger5 = "";
+            saveWindow = "";
+            path = Application.StartupPath;
+            logged = new Dictionary<int, bool>();
+            logged[9] = false;
+            logged[91] = false;
+            mousePath = path + @"\Output";
+            if (!Directory.Exists(mousePath))
+            {
+                Directory.CreateDirectory(mousePath);
+            }
+            time = DateTime.Now;
+            keyPath = mousePath + @"\Keys.txt";
+            mousePath = mousePath + @"\Mouse.txt";
+            Application.ApplicationExit += new EventHandler(OnExit);
+            File.WriteAllText(mousePath, "");
+            File.WriteAllText(keyPath, "");
+            Console.Clear();
+            Console.WriteLine("Key Logger v0.1 has started at "+time.Year+":"+time.Month+":"+time.Day+" "+time.Hour+":"+time.Minute+":"+time.Second+"\n");
+            Console.WriteLine("Keys are logged at:\n "+keyPath+"\n");
+            Console.WriteLine("Mouse things are logged at:\n" + mousePath+"\n");
+            Console.WriteLine("To quit just write exit. Do note that this will clear the logs every time you run it.");
+            new Task(testLoop).Start();
+            Application.Run();
+        }
+
+        private static async void testLoop()
+        {
+            while (true)
+            {
+                Thread.Sleep(50);
+                if (Console.ReadLine() == "exit")
+                {
+                    Console.WriteLine("Exiting...");
+                    Thread.Sleep(1000);
+                    Application.Exit();
+                }
+            }
+        }
+
+        private static void OnExit(object sender, EventArgs e)
+        {
+            File.WriteAllText(keyPath, "Total Key Inputs: " + counter+"\n\n"+ File.ReadAllText(keyPath));
+            File.WriteAllText(mousePath, "Total Mouse Inputs: " + counter1 + "\n\n" + File.ReadAllText(mousePath));
+            UnhookWindowsHookEx(keyhookID);
+            UnhookWindowsHookEx(mousehookID);
+        }
+
+        private static IntPtr SetKeyHook(LowLevelKeyboardProc proc)
+        {
+            using (Process curProcess = Process.GetCurrentProcess())
+            using (ProcessModule curModule = curProcess.MainModule)
+            {
+                return SetWindowsHookEx(ll_keyboard, proc,
+                    GetModuleHandle(curModule.ModuleName), 0);
+            }
+        }
+
+        private static IntPtr SetMouseHook(LowLevelMouseProc proc)
+        {
+            using (Process curProcess = Process.GetCurrentProcess())
+            using (ProcessModule curModule = curProcess.MainModule)
+            {
+                return SetWindowsHookEx(ll_mouse, proc,
+                    GetModuleHandle(curModule.ModuleName), 0);
+            }
+        }
+
+        private delegate IntPtr LowLevelKeyboardProc(
+            int nCode, IntPtr wParam, IntPtr lParam);
+
+        private delegate IntPtr LowLevelMouseProc(
+            int code, IntPtr wParam, IntPtr lParam);
+
+        private static IntPtr mHook(int code, IntPtr wParam, IntPtr lParam)
+        {
+            if (code >= 0)
+            {
+                MSLLHOOKSTRUCT hookStruct = (MSLLHOOKSTRUCT)Marshal.PtrToStructure(lParam, typeof(MSLLHOOKSTRUCT));
+                time = DateTime.Now;
+                string answer = "[\""+time.Year+"-"+time.Month+"-"+time.Day+" "+time.Hour+":"+time.Minute+":"+time.Second+","+time.Millisecond+"\", \"";
+                if ((MouseMessages)wParam==MouseMessages.WM_MOUSEMOVE)
+                {
+                    return CallNextHookEx(mousehookID, code, wParam, lParam);
+                }
+                switch ((MouseMessages)wParam)
+                {
+                    case MouseMessages.WM_LBUTTONDOWN:
+                        answer = answer + "Botton.left\", pressed\", (";
+                        counter1++;
+                        break;
+                    case MouseMessages.WM_LBUTTONUP:
+                        answer = answer + "Botton.left\", released\", (";
+                        break;
+                    case MouseMessages.WM_RBUTTONDOWN:
+                        answer = answer + "Botton.right\", pressed\", (";
+                        counter1++;
+                        break;
+                    case MouseMessages.WM_RBUTTONUP:
+                        answer = answer + "Botton.right\", pressed\", (";
+                        break;
+                }
+                File.AppendAllText(mousePath,answer+hookStruct.pt.x + ", " + hookStruct.pt.y+")]\n");
+            }
+            return CallNextHookEx(mousehookID,code,wParam,lParam);
+        }
+
+        private static IntPtr kHook(
+            int nCode, IntPtr wParam, IntPtr lParam)
+        {
+            if (nCode >= 0)
+            {
+                string answer = "";
+                time = DateTime.Now;
+                answer = "[\"" + time.Year + "-" + time.Month + "-" + time.Day + " " + time.Hour + ":" + time.Minute + ":" + time.Second + "," + time.Millisecond+"\", ";
+                Keys vkCode = (Keys)Marshal.ReadInt32(lParam);
+                int keyCode = Marshal.ReadInt32(lParam);
+                if (wParam == key_Down || wParam == sys_key_Down)
+                {
+                    if ((keyCode == 9 || keyCode == 91) && (logged[9] || logged[91])) {
+                        return (IntPtr)1;
+                    }
+                    logged[Marshal.ReadInt32(lParam)] = true;
+                    answer = answer+"'"+vkCode+"' pressed]";
+                    counter++;
+                } else if (wParam == key_Up || wParam == sys_key_Up)
+                {
+                    logged[Marshal.ReadInt32(lParam)] = false;
+                    answer = answer + "'" + vkCode + "' released]";
+                }
+                File.AppendAllText(keyPath, answer+"\n");
+                logger5 = vkCode.ToString();
+            }
+            return CallNextHookEx(keyhookID, nCode, wParam, lParam);
+        }
+
+        private static string GetActiveWindowTitle()
+        {
+            const int nChars = 256;
+            StringBuilder Buff = new StringBuilder(nChars);
+            IntPtr handle = GetForegroundWindow();
+
+            if (GetWindowText(handle, Buff, nChars) > 0)
+            {
+                return Buff.ToString();
+            }
+            return null;
+        }
+
+        private enum MouseMessages
+        {
+            WM_LBUTTONDOWN = 0x0201,
+            WM_LBUTTONUP = 0x0202,
+            WM_MOUSEMOVE = 0x0200,
+            WM_MOUSEWHEEL = 0x020A,
+            WM_RBUTTONDOWN = 0x0204,
+            WM_RBUTTONUP = 0x0205
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct POINT
+        {
+            public int x;
+            public int y;
+        }
+
+        [StructLayout(LayoutKind.Sequential)]
+        private struct MSLLHOOKSTRUCT
+        {
+            public POINT pt;
+            public uint mouseData;
+            public uint flags;
+            public uint time;
+            public IntPtr dwExtraInfo;
+        }
+
+        [DllImport("user32.dll")]
+        static extern IntPtr GetForegroundWindow();
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr SetWindowsHookEx(int idHook,
+            LowLevelMouseProc lpfn, IntPtr hMod, uint dwThreadId);
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr SetWindowsHookEx(int idHook,
+            LowLevelKeyboardProc lpfn, IntPtr hMod, uint dwThreadId);
+
+        [DllImport("User32.dll")]
+        private static extern short GetAsyncKeyState(int vKey);
+
+        [DllImport("user32.dll")]
+        [return: MarshalAs(UnmanagedType.Bool)]
+        private static extern bool UnhookWindowsHookEx(IntPtr hhk);
+
+        [DllImport("user32.dll")]
+        private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode,
+            IntPtr wParam, IntPtr lParam);
+
+        [DllImport("kernel32.dll")]
+        private static extern IntPtr GetModuleHandle(string lpModuleName);
+
+        [DllImport("user32.dll")]
+        static extern int GetWindowText(IntPtr hWnd, StringBuilder text, int count);
+
+        public static string path;
+
+        public static string mousePath;
+
+        public static string keyPath;
+    }
+}
