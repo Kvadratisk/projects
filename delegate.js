@@ -16,10 +16,10 @@ class delegate {
 	run(x=null) {
 		if (x==null) {
 		for (var i = 0; i < this.functions.length; i++) {
-			window.setTimeout(this.functions[i]+"("+this.params[i]+");",0);
+			window[this.functions[i]](this.params[i]);
 		}
 		} else {
-			window.setTimeout(this.functions[x]+"("+this.params[x]+");",0);
+			window[this.functions[x]](this.params[x]);
 		}
 	}
 	set remove(test) {
