@@ -5,9 +5,11 @@
 
 function handleMove(e) {
   e.preventDefault();
-  var touches = evt.changedTouches;
+ if (mouseStatus) {
+  var touches = e.changedTouches;
   bip.style.left = (touches[0].pageX - 25)+"px";
   bip.style.top = (touches[0].pageY - 25)+"px";
+ }
 }
 
 function handleCancel(e) {
@@ -17,9 +19,7 @@ function handleCancel(e) {
 
 function handleStart(e) {
   e.preventDefault();
-  if (!mouseStatus) {
-    mouseStatus=true;
-  }
+   mouseStatus=true;
 }
 
 function handleEnd(e) {
