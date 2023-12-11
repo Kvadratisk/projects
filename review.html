@@ -1,0 +1,114 @@
+<html>
+<head>
+<style>
+textarea {
+    background-color: #606060;
+    color:#80ff80;
+    height:50%;
+    width:40%;
+}
+</style>
+    <title>AOC</title>
+</head>
+<body style="background-color:#202020;color:#20FF20;">
+<select id="day">
+    <option value="11">Day 11</option>
+</select>
+<select id="part">
+    <option value="1">Part 1</option>
+    <option value="2">Part 2</option>
+</select><br><br>
+<textarea id="intxt"></textarea>
+<textarea id="outtxt"></textarea>
+<br>
+<input type="button" value="Calculate" onClick="process()">
+<script>
+const intxt = document.getElementById("intxt");
+const outtxt = document.getElementById("outtxt");
+const parts = document.getElementById("part");
+const days = document.getElementById("day");
+window.onload=function() {
+    days.value=window.localStorage.getItem("ds")==null?days.value:window.localStorage.getItem("ds");
+    parts.value=window.localStorage.getItem("ps")==null?parts.value:window.localStorage.getItem("ps");
+    intxt.value=window.localStorage.getItem("txt")==null?intxt.value:window.localStorage.getItem("txt");
+    window.setTimeout(process,10);
+}
+days.onchange=parts.onchange=intxt.onchange=function() {
+    window.localStorage.setItem("ds",days.value);
+    window.localStorage.setItem("ps",parts.value);
+    window.localStorage.setItem("txt",intxt.value);
+    window.setTimeout(process,10);
+}
+function process() {
+    let startTime = performance.now();
+    let buffer = new ArrayBuffer(1024*1024*5);
+    let day = days.value;
+    let part = parts.value;
+    let sum = 0;
+    let cmode = part=="1"?0:1;
+    let str = intxt.value.split("\n");
+    if (str.length==0 || (str.length==1 && str[0]=="")) {
+        outtxt.value="";
+        return;
+    }
+    let arr = [];
+    if (day=="11") { 
+        for (let i = 0; i < str.length; i++) {
+            arr[i]=str[i].split("");
+        }
+        let addFactor = cmode==0?1:999999;
+        let lookupX = [];
+        let lookupY = [];
+        let offsetX = 0;
+        let offsetY = 0;
+        for (let i = 0; i < arr.length; i++) {
+            let isempty = true;
+            for (let l = 0; l < arr[i].length; l++) {
+                if (arr[i][l]==".") continue;
+                isempty=false;
+                break;
+            }
+            lookupY.push(offsetY);
+            if (isempty) {
+                offsetY+=addFactor;
+            }
+        }
+        for (let i = 0; i < 0xFFFF; i++) {
+            let isempty = true;
+            for (let l = 0; l < arr.length; l++) {
+                if (i>arr[l].length) {
+                    i=Number.MAX_SAFE_INTEGER;
+                    break;
+                }
+                if (arr[l][i]==".") continue;
+                isempty=false;
+                break;
+            }
+            lookupX.push(offsetX);
+            if (isempty) {
+                offsetX+=addFactor;
+            }
+        }
+        let positions = new Uint32Array(buffer);
+        let count = 0;
+        for (let i = 0; i < arr.length; i++) {
+            for (let l = 0; l < arr[i].length; l++) {
+                if (arr[i][l]=="#") {
+                    positions[count++]=l+lookupX[l];
+                    positions[count++]=i+lookupY[i];
+                }
+            }
+        }
+        let totalSum = 0;
+        for (let i = 0; i < count; i+=2) {
+            for (let l = i+2; l < count; l+=2) {
+                totalSum+=(Math.abs(positions[i]-positions[l])+Math.abs(positions[i+1]-positions[l+1]));
+            }
+        }
+        outtxt.value=totalSum;
+    }
+    console.log(performance.now()-startTime);
+}
+</script>
+</body>
+</html>
