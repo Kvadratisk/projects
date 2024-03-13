@@ -1,0 +1,323 @@
+<html>
+<head>
+</head>
+<body>
+<canvas id="screen" style="position:absolute;top:0px;left:0px;" onclick="filePick();"></canvas>
+<input type="file" id="files" style="display:none;" onchange="filePicked();">
+<textarea id="intxt" onchange="testMin();" style="display:none;"></textarea>
+<script>
+var canvas = document.getElementById("screen");
+var ctx = canvas.getContext("2d");
+var fileIn = document.getElementById("files");
+var gif = [];
+var gifID = 0;
+function filePick() {
+	fileIn.click();
+}
+function filePicked() {
+	if (fileIn==null || fileIn.files==null || fileIn.files.length==0) return;
+	let reader = new FileReader();
+	reader.onload=function() {
+		let u8 = new Uint8Array(reader.result);
+		console.log(u8);
+		let count = 0;
+		let bitOff = 0;
+		if (u8.length<count+3) return;
+		function readByte(x=1) {
+			let out = 0n;
+			if (bitOff>0) {
+				bitOff=0;
+				count++;
+			}
+			for (let i = 0; i < x; i++) {
+				out=out<<8n|BigInt(u8[count++]);
+			}
+			return Number.parseInt(out);
+		}
+		function readBit(x=1) {
+			let out = 0;
+			for (let i = 0; i < x; i++) {
+				let tmp = u8[count];
+				out=out<<1|((tmp>>(bitOff++))&1);
+				if (bitOff>=7) {
+					bitOff=0;
+					count++;
+				}
+			}
+			return out;
+		}
+		if (readByte(3)!=0x474946) return;
+		console.log("GIF");
+		let tmp = readByte(3);
+		let version = 0;
+		if (tmp==0x383961) {
+			version = 2;
+		} else if (tmp==0x383761) {
+			version = 1;
+		} else {
+			return;
+		}
+		let [gw,gh]=[readByte(2),readByte(2)];
+		let scale = 1;
+		for (let i = 0; i < Math.min(width,height); i++) {
+			if ((scale+1)*gw>=width || (scale+1)*gh>=height) break;
+			scale++;
+		}
+		let packedF = readByte();
+		let bgIndex = readByte();
+		let unused = readByte();
+		let gCtable = [];
+		let gctIs = ((packedF>>7)&1)==true;
+		let gctSize = Math.pow(2,((packedF>>4)&0x7)+1);
+		if (gctIs) {
+			for (let i = 0; i < gctSize; i++) {
+				gCtable.push(readByte(3));
+			}
+		}
+		let currentID = 0;
+		while (count<u8.length) {
+			let currentBlock = readByte();
+			console.log(currentBlock.toString(16));
+			if (currentBlock==0x3b) return;
+			let secondB = readByte();
+			if (currentBlock==0x21 && secondB==0xF9) {
+				let size = readByte();
+				if (size!=4) return;
+				currentID++;
+				if (gif[currentID]==null) {
+					gif[currentID]=[];
+				}
+				readByte();
+				gif[currentID].push(readByte(2));
+				gif[currentID].push(readByte());
+				readByte();
+				continue;
+			}
+			if (currentBlock==0x2c) {
+				count--;
+				let tmpBG = bgIndex;
+				let localCt = gCtable;
+				if (gif[currentID]==null) {
+					gif[currentID]=[100/20,bgIndex];
+				} else if (gif[currentID].length==2){
+					tmpBG = gif[currentID][1];
+				} else {
+					currentID++;
+					gif[currentID]=[100/20,bgIndex];
+				}
+				gif[currentID].push(readByte(2));
+				gif[currentID].push(readByte(2));
+				gif[currentID].push(readByte(2));
+				gif[currentID].push(readByte(2));
+				let tpack = readByte();
+				if ((tpack>>7)&1==true) {
+					let loop = Math.pow(2,(tpack&7)+1);
+					let tmpList = [];
+					for (let i = 0; i < loop; i++) {
+						tmpList.push(readByte(3));
+					}
+					localCt=tmpList;
+				}
+				let minCodeSize = readByte();
+				let codeTable = [];
+				for (let i = 0; i < Math.pow(2,minCodeSize)+2; i++) {
+					codeTable.push([i]);
+				}
+				let clearCode = Math.pow(2,minCodeSize)+1;
+				let eoicode = clearCode+1;
+				codeSize=minCodeSize+1;
+				let next = readByte();
+				let curBuffer = [];
+				let indexStream = [codeTable[readBit(codeSize)]];
+				function isInTable(arr) {
+					for (let i = 0; i < codeTable.length; i++) {
+						if (codeTable[i].length!=arr.length) continue;
+						for (let l = 0; l < codeTable[i].length; l++) {
+							if (codeTable[i][l]!=arr[l]) break;
+							if (l+1>=arr.length) return i;
+						}
+					}
+					return -1;
+				}
+				while (next>0 && count<u8.length) {
+					for (let i = 0; i < next; i++) {
+						let curCode = readBit(codeSize);
+						if (curCode==clearCode) {
+							for (let i = 0; i < Math.pow(2,minCodeSize)+2; i++) {
+								codeTable.push([i]);
+							}
+							codeSize=minCodeSize+1;
+							continue;
+						}
+						if (curCode==eoicode) {
+							break;
+						}
+						if (codeTable.length>=curCode) {
+							indexStream=indexStream.concat(codeTable[curCode]);
+							let pop12 = codeTable[curCode-1]+codeTable[curCode][0];
+							if (codeTable.length>=0xFFF) continue;
+							codeTable.push(pop12);
+						} else {
+							let pop12 = codeTable[curCode-1].concat(codeTable[curCode-1][0]);
+							indexStream=indexStream.concat(pop12);
+							if (codeTable.length>=0xFFF) continue;
+							codeTable.push(pop12);
+							if (codeTable.length==Math.pow(2,codeSize)-2) {
+								codeSize++;
+							}
+						}
+					}
+					break;
+					next=readByte();
+				}
+				
+				continue;
+			}
+			count--;
+			currentBlock=readByte();
+			while (currentBlock!=0 && count<u8.length) {
+				count+=currentBlock;
+				currentBlock=readByte();
+			}
+		}
+	}
+	reader.readAsArrayBuffer(fileIn.files[fileIn.files.length-1]);
+}
+var width = 1;
+var height = 1;
+var time = 0;
+var deltaTime = 1;
+window.onresize=function() {
+	width=canvas.width=window.innerWidth;
+	height=canvas.height=window.innerHeight;
+	ctx.clearRect(0,0,width,height);
+}
+window.onload=function() {
+	window.onresize();
+	window.requestAnimationFrame(update);
+}
+function update(timeLaps) {
+	deltaTime=timeLaps-time;
+	time=timeLaps;
+	window.requestAnimationFrame(update);
+}
+function testMin() {
+	let instr = document.getElementById("intxt").value;
+	document.getElementById("intxt").style="width:1024px;height:1024px;";
+	document.getElementById("intxt").value=minimize(instr);
+}
+function minimize(string) {
+	let commentFree = "";
+	let isScript=false;
+	let varStorage = [];
+	let replaceStorage = [];
+	var special = ["=","<","+","-",";",">","*","/","|","&","%","^","{","}","[","]","(",")",";",":","?"];
+	var declaration = ["var","let","const","function"];
+	var scopeDepth = 0;
+	function getNextName(depth) {
+		
+	}
+	for (let i = 0; i < string.length; i++) {
+		if (string[i]=="\n" || string[i]=="\r") continue;
+		if (i+1<string.length && string[i]=="/") {
+			if (string[i+1]=="/") {
+				i++;
+				for (let l = ++i; l < string.length; l++) {
+					if (string[l]=="\n") break;
+					i++;
+				}
+				continue;
+			} else if (string[i+1]=="*") {
+				i++;
+				for (let l = ++i; l < string.length-1; l++) {
+					if (string[l]=="*" && string[l+1]=="/") break;
+					i++;
+				}
+				continue;
+			}
+		}
+		if (string[i]=="\"") {
+			commentFree+=string[i];
+			let escaped = false;
+			for (let l = ++i; l < string.length; l++) {
+				commentFree+=string[l];
+				if (string[l]=="\"" && !escaped) break;
+				if (string[l]=="\\" && !escaped) {
+					if (!escaped) escaped=true;
+				} else {
+					escaped=false;
+				}
+				i++;
+			}
+			continue;
+		}
+		if (string[i]=="\t" || (i+1<string.length && string[i]==" " && string[i+1]==" ")) continue;
+		if (string[i]=="<") {
+			let mode = false;
+			commentFree+=string[i];
+			if (string[i+1]=="/") {
+				mode=true;
+				commentFree+=string[i+1];
+			}
+			i+=mode+1;
+			let tmpStr = "";
+			for (let l = i; l < string.length; l++) {
+				if (string[l]==" " || string[l]==";" || string[l]=="}" || string[l]==">") break;
+				tmpStr+=string[l];
+				i++;
+			}
+			if (tmpStr.length>0) i--;
+			commentFree+=tmpStr;
+			if (tmpStr=="script") {
+				isScript=!mode;
+			}
+			continue;
+		}
+		if (isScript) {
+			if (string[i]=="{") {
+				commentFree+=string[i];
+				scopeDepth++;
+				continue;
+			}
+			if (string[i]=="}") {
+				commentFree+=string[i];
+				scopeDepth--;
+				if (scopeDepth>0) {
+					let pop = varStorage.pop();
+					console.log(pop);
+				}
+				continue;
+			}
+			if (string[i]==" ") {
+				if (special.includes(string[i-1]) || special.includes(string[i+1])) continue;
+			}
+			let tmpStr = "";
+			for (let l = i; l < string.length; l++) {
+				if (string[l]==" " || string[l]==";" || string[l]=="}") break;
+				tmpStr+=string[l];
+			}
+			if (declaration.includes(tmpStr)) {	
+				commentFree+=tmpStr;
+				i+=tmpStr.length;
+				let tmpStr1 = "";
+				for (let l = i; l < string.length; l++) {
+					if (string[l]==" " || string[l]==";" || string[l]=="}" || string[l]=="(") break;
+					tmpStr1+=string[l];
+					i++;
+				}
+				while (varStorage.length-1<scopeDepth) {
+					varStorage.push([]);
+				}
+				commentFree+=tmpStr1;
+				varStorage[scopeDepth].push([declaration.indexOf(tmpStr),tmpStr1]);
+				continue;
+			}
+		}
+		commentFree+=string[i];
+	}
+	return commentFree;
+}
+
+</script>
+</body>
+</html>
